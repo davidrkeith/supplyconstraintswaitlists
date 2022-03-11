@@ -1,0 +1,2241 @@
+{UTF-8}
+Gas Discard Fr=
+	New Vehicle Buyers i[GAS]/SUM(New Vehicle Buyers i[Technology!])
+	~	dmnl
+	~	The fraction of new vehicle buyers discarding a conventional Gasoline \
+		vehicle.
+	|
+
+Prius Discard Fr=
+	New Vehicle Buyers i[PRIUS]/SUM(New Vehicle Buyers i[Technology!])
+	~	dmnl
+	~	The fraction of new vehicle buyers discarding a Prius.
+	|
+
+Utility j[GAS]=
+	"Conventional (Outside Good) Constant" ~~|
+Utility j[PRIUS]=
+	Prius Constant k+(U1 j[PRIUS])+U2
+	~	dmnl
+	~	The utility of platform j is the sum of the utilities of individual \
+		attributes of platform j.
+	|
+
+"Conventional (Outside Good) Constant"=
+	0
+	~	dmnl
+	~	The conventional (outside good) constant is the constant utility value \
+		assumed for the conventional gasoline vehicle.
+	|
+
+Discount Units Correction=
+	1
+	~	year
+	~	Units correction for the discounted cash flow calculation.
+	|
+
+PV Factor=
+	(1-((1+(Discount Rate*Discount Units Correction))^-(Years/Discount Units Correction)\
+		))/Discount Rate
+	~	year
+	~	The discounted cashflow factor for the present value of future annual \
+		costs.
+	|
+
+Simulated=
+	IF THEN ELSE(SW Input Data=0, Reported Data Prius Sales*Prius Sales Units Correction\
+		, Reported Data Waitlist*Waiting List Units Correction)
+	~	Units
+	~	Set equal to the simulated data series.
+		Reported Data[WLVEHICLES]
+	|
+
+SW Exogenous Sales=
+	1
+	~	dmnl [0,1,1]
+	~	A binary switch used for parameter estimation: takes value 1 if new \
+		vehicle sales entering the fleet are from the actual data, 0 if from the \
+		simulation.
+	|
+
+Prius Sales Units Correction=
+	1
+	~	Units*Month/vehicles
+	~		|
+
+Historical=
+	IF THEN ELSE(SW Input Data=0, UPL US Monthly Prius Sales*Prius Sales Units Correction\
+		, UPL Waitlist Vehicles*Waiting List Units Correction)
+	~	Units
+	~	Set equal to the historical data series.
+	|
+
+Waiting List Units Correction=
+	1
+	~	Units/vehicles
+	~		|
+
+Continuous Data PS=
+	Order Fulfilment
+	~	vehicles/Month
+	~	The continuous variable of interest.
+	|
+
+Accumulated Continuous Data PS= INTEG (
+	Continuous Data PS-Drained Reported Data PS,
+		0)
+	~	vehicles
+	~	Accumulation of the continous input variable less discrete data that \
+		drains out at the end of each reporting period.
+	|
+
+Accumulated Continuous Data WL= INTEG (
+	Continuous Data WL-Drained Reported Data WL,
+		0)
+	~	vehicles*Month
+	~	Accumulation of the continous input variable less discrete data that \
+		drains out at the end of each reporting period.
+	|
+
+SW Endogenous Familiarity=
+	1
+	~	dmnl
+	~	A binary switch that can be useful for model testing. Takes value 1 for \
+		endogenous familiarity, 0 for exogenous familiarity.
+	|
+
+Reported Sales Residuals=
+	Reported Data Prius Sales-UPL US Monthly Prius Sales
+	~	vehicles/Month
+	~	Sales residuals are calculated as the difference between (reported) \
+		simulated monthly Prius sales, and actual monthly Prius sales.
+	~	:SUPPLEMENTARY 
+	|
+
+Drained Reported Data PS=
+	IF THEN ELSE(Check Reporting=0, Accumulated Continuous Data PS/TIME STEP , 0 )
+	~	vehicles/Month
+	~	Whenever the check reporting variable = 0, drain out the accumulated \
+		continuous variable.
+	|
+
+Drained Reported Data WL=
+	IF THEN ELSE(Check Reporting=0, Accumulated Continuous Data WL/TIME STEP , 0 )
+	~	vehicles
+	~	Whenever the check reporting variable = 0, drain out the accumulated \
+		continuous variable.
+	|
+
+Total Familiarity with Prius= INTEG (
+	Familiarity Update+Total Familiarity Gain Prius-Total Familiarity Loss Prius
+	,
+		Initial Familiarity with Prius)
+	~	vehicles
+	~	The Gas-driving population familiarity with the Prius accumulates \
+		familiarity from social exposure and from swaps Prius to Gas, less the \
+		loss of familiarity resulting from swaps Gas to Prius.
+	|
+
+Reported Data Prius Sales=
+	Drained Reported Data PS*TIME STEP/Reporting Period
+	~	vehicles/Month
+	~	Simulated Prius sales reported on a monthly basis for the purpose of model \
+		estimation.
+	|
+
+Reported Data Waitlist=
+	Drained Reported Data WL*TIME STEP/Reporting Period
+	~	vehicles
+	~	Simulated waitlist length (vehicles) reported on a monthly basis for the \
+		purpose of model estimation.
+	|
+
+Continuous Data WL=
+	Waitlist
+	~	vehicles
+	~	The continuous variable of interest.
+	|
+
+Exogenous Familiarity Value=
+	1
+	~	dmnl
+	~	Assumed constant familiarity value for model testing.
+	|
+
+Probability of Contact with Waitlisted Prius Buyer=
+	IF THEN ELSE(SW Exogenous Waiting List=1,UPL Waitlist Vehicles,Waitlist)/SUM(Installed Base i\
+		[Technology!])
+	~	dmnl
+	~	The probability that a given individiual is a waitlisted Prius buyer.
+	|
+
+U1 j[PRIUS]=
+	TCO Weight*(TCO j[PRIUS]-TCO j[GAS])/1000 ~~|
+U1 j[GAS]=
+	0
+	~	dmnl
+	~	The contribution of Total Cost of Ownership (TCO) to the utility of \
+		platform j.
+	|
+
+Familiarity with Prius=
+	ZIDZ(Total Familiarity with Prius,Installed Base i[GAS])
+	~	dmnl
+	~	The average familiarity that consumers currently driving a gasoline \
+		vehicle possess about the Prius, equal to the gas-driving population stock \
+		of Prius familiarity divided by size of the gas installed base.
+	|
+
+SW Exogenous Waiting List=
+	0
+	~	dmnl
+	~	A binary switch taking the value 1 if the waitlist is exogenous, 0 if \
+		endogenous.
+	|
+
+Familiarity Update=
+	(Familiarity Gain)*Installed Base i[GAS]
+	~	vehicles/Month
+	~	The gain in Prius familiarity in the Gas driving population that results \
+		from social exposure to the Prius.
+	|
+
+UPL Waitlist Vehicles:INTERPOLATE::=
+	UPL Waitlist Length*UPL US Monthly Prius Sales
+	~	vehicles
+	~	The estimated waitlist length (vehicles) is calculated as the waitlist \
+		length (months) multiplied by the monthly rate of Prius sales \
+		(vehicles/month).
+	|
+
+Total Social Exposure to Platform=
+	Socialization Effect of Marketing+Socialization Effect of Prius Drivers+Socialization Effect of Waitlisted Prius Buyers
+	~	dmnl/Month
+	~	The total amount of social exposure to the Prius per month.
+	|
+
+Reported WL Vehicles Residuals=
+	Reported Data Waitlist-UPL Waitlist Vehicles
+	~	vehicles
+	~	Waitlist residuals are calculated as the difference between the (reported) \
+		simulated monthly Prius waitlist, and the estimated actual monthly Prius \
+		waitlist.
+	~	:SUPPLEMENTARY 
+	|
+
+Customer Demand for Prius=
+	SUM(New Vehicle Buyers i[Technology!]*Prius Share of Customer Demand i[Technology!])\
+		*Average Segment Market Share
+	~	vehicles/Month
+	~	Total customer demand for the Prius is the sum of Prius demand from \
+		drivers of each current platform i within the Prius market segment.
+	|
+
+Annual Operating Cost j[Fleet]=
+	Operating Cost j[Fleet]*Miles per Year/Cents per Dollar
+	~	$/vehicles/year
+	~	The annual cost of driving.
+	|
+
+Familiarity ij[Technology,TechnologyTo]=
+	IF THEN ELSE(Technology=GAS:AND:TechnologyTo=PRIUS,IF THEN ELSE( SW Endogenous Familiarity\
+		=0, Exogenous Familiarity Value, Familiarity with Prius),1)
+	~	dmnl
+	~	The familiarity that drivers of platform i have with platform j.  Assumed \
+		to be 1 if platform j is GAS, and 1 if platform i = platform j.  \
+		Therefore, only platform i = GAS and platform j = PRIUS is the only \
+		endogenous familiarity component.
+	|
+
+Probability of Contact with Prius Driver=
+	Installed Base i[PRIUS]/SUM(Installed Base i[Technology!])
+	~	dmnl
+	~	The probability that a given individiual is a Prius adopter.
+	|
+
+Effective Price j[PRIUS]=
+	UPL MSRP j[PRIUS]-UPL Federal Tax Credit Prius-UPL State Government Incentives Prius\
+		-UPL Dealer Discount from MSRP ~~|
+Effective Price j[GAS]=
+	UPL MSRP j[GAS]
+	~	$/vehicles
+	~	The effective price is calculated as the Manufacturer’s Suggested Retail \
+		Price (MSRP) less federal and state government incentives and any dealer \
+		discount.
+	|
+
+TCO j[Fleet]=
+	Real Effective Price j[Fleet]+PV Lifetime Operating Costs j[Fleet]
+	~	$/vehicles
+	~	The lifetime Total Cost of Ownership (TCO) of platform j, calculated as \
+		the sum of the initial purchase price and lifetime operating costs.
+	|
+
+PV Lifetime Operating Costs j[Fleet]=
+	Annual Operating Cost j[Fleet]*PV Factor
+	~	$/vehicles
+	~	The present value of lifetime operating costs is the sum of the discounted \
+		stream of future costs over the life of the vehicle.
+	|
+
+Discount Rate=
+	0.04
+	~	dmnl/year
+	~	The assumed discount rate for calculation of present values.
+	|
+
+TCO Weight=
+	0
+	~	dmnl/($/vehicles)
+	~	The amount of utility derived from each unit of TCO.
+	|
+
+Miles per Year=
+	12000
+	~	miles/vehicles/year
+	~	The assumed miles driven per vehicle per year.
+	|
+
+Cents per Dollar=
+	100
+	~	cents/$
+	~	The number of cents per dollar.
+	|
+
+Years=
+	10
+	~	year
+	~	The number of years over which lifetime cost of ownership is calculated.
+	|
+
+Real Effective Price j[Fleet]=
+	Effective Price j[Fleet]/UPL Inflation Factor
+	~	$/vehicles
+	~	The real effective price of platform j, controlling for inflation.
+	|
+
+Vehicle Sales i[PRIUS]=
+	IF THEN ELSE(SW Exogenous Sales=1, UPL US Monthly Prius Sales, Order Fulfilment) ~~|
+Vehicle Sales i[GAS]=
+	IF THEN ELSE(SW Exogenous Sales=1, UPL US Monthly Light Vehicle Sales-UPL US Monthly Prius Sales\
+		, SUM(New Vehicle Buyers i
+	[Fleet!])-Order Fulfilment)
+	~	vehicles/Month
+	~	The rate of new vehicle sales joining the new vehicle fleet is equal to \
+		the rate of order fulfillment (endogenous), or else actual new vehicle \
+		sales (if exogenous).
+	|
+
+Initial Fleet Size=
+	SUM(Initial Installed Base New Vehicles i[Fleet!]+Initial Installed Base Used Vehicles i\
+		[Fleet!])
+	~	vehicles
+	~	The initial fleet size is the sum of old and new vehicles by platform i.
+	~	:SUPPLEMENTARY 
+	|
+
+Inventory Coverage Weight=
+	0
+	~	dmnl/Month
+	~	The amount of Prius utility derived from each unit of inventory coverage.
+	|
+
+U2=
+	Inventory Coverage Weight*UPL Dealer Inventory Coverage
+	~	dmnl
+	~	The contribution of Inventory Coverage to the utility of platform j.
+	|
+
+UPL Dealer Inventory Coverage:INTERPOLATE::=
+	GET XLS DATA('UPL Prius Data.xls', 'Dealer InvCov', 'A', 'B2')
+	~	Month
+	~	The monthly-average amount of Prius inventory coverage at Toyota \
+		dealerships.
+	|
+
+Prius Constant k=
+	-1
+	~	dmnl
+	~	The inherent difference in utility assumed for the Prius relative to the \
+		conventional gasoline vehicle.
+	|
+
+Deliveries to Dealers=
+	UPL Dealership Deliveries
+	~	vehicles/Month
+	~	The rate at which Prius inventory is delivered to dealers.
+	|
+
+"Waitlist Length (Months)"=
+	XIDZ(Waitlist,Order Fulfilment,0)
+	~	Month
+	~	The waitlist length in units months is estimated as the number of people \
+		(vehicles) on the waitlist divided by the current rate of order fulfilment.
+	~	:SUPPLEMENTARY 
+	|
+
+Dealer Prius Sales=
+	MIN(Maximum Shipping Rate, Desired Shipping Rate)
+	~	vehicles/Month
+	~	The (simulated) rate of Prius sales is the lesser of the rate of sales \
+		possible given available inventory (the Maximum Shipping Rate) and the \
+		rate of sales possible given demand (Desired Shipping Rate).
+	|
+
+Order Fulfilment=
+	((1-SW Demand Side Diffusion Only)*Dealer Prius Sales)+(SW Demand Side Diffusion Only\
+		*Customer Demand for Prius)
+	~	vehicles/Month
+	~	The rate of order fulfillment on the waitlist is equal to the rate of \
+		dealer Prius sales from inventory. When running the model without supply \
+		constraints, order fulfillment is equal to customer demand.
+	|
+
+Waitlist= INTEG (
+	Customer Demand for Prius-Order Fulfilment,
+		0)
+	~	vehicles
+	~	The waiting list (vehicles) increases with new customer orders, and \
+		decreases as orders are fulfilled with inventory.
+	|
+
+UPL Dealership Deliveries:INTERPOLATE::=
+	GET XLS DATA('UPL Prius Data.xls', 'Dealership Deliveries', 'B', 'C2')
+	~	vehicles/Month
+	~	The rate at which Prius inventory is delivered to dealers.
+	|
+
+Operating Cost j[TechnologyTo]=
+	1/(UPL MPG Combined j[TechnologyTo]/Real US Average Retail Gasoline Price)
+	~	cents/miles
+	~	The cost of driving platform j, in cents per mile.
+	|
+
+Real US Average Retail Gasoline Price=
+	UPL US Average Retail Gasoline Price/UPL Inflation Factor
+	~	cents/gallon
+	~	The real US monthly average retail price of gasoline ($/gallon).
+	|
+
+UPL Inflation Factor:=
+	GET XLS DATA('UPL Prius Data.xls', 'Inflation Jan 2005', 'B', 'C2')
+	~	dmnl
+	~	The US national-average CPI index, normalized to 1 in January 2005.
+	|
+
+UPL MSRP j[PRIUS]=
+	Prius MSRP ~~|
+UPL MSRP j[GAS]=
+	IF THEN ELSE(Market Segment Indicator Variable=0, Corolla MSRP, Camry MSRP)
+	~	$/vehicles
+	~	The Manufacturer's Suggested Retail Price (MSRP) of platform j
+	|
+
+UPL MPG Combined j[PRIUS]=
+	Prius MPG ~~|
+UPL MPG Combined j[GAS]=
+	IF THEN ELSE(Market Segment Indicator Variable=0, Corolla MPG, Camry MPG)
+	~	miles/gallon
+	~	The fuel economy of vehicle platform j
+	|
+
+UPL Dealer Discount from MSRP:=
+	GET XLS DATA('UPL Prius Data.xls', 'Sales', 'B', 'N2')
+	~	$/vehicles
+	~	The monthly average discount below the MSRP offered by the dealer.
+	|
+
+SW Exogenous New Vehicle Sales Rate=
+	1
+	~	dmnl
+	~	A binary switch used to select whether the rate of new vehicle sales in \
+		the model is exogenous (1) or endogenous (0).
+	|
+
+New Vehicle Buyers i[Fleet]=
+	IF THEN ELSE(SW Exogenous New Vehicle Sales Rate=1, New Vehicle Buyers Exogenous i[Fleet\
+		], New Vehicle Buyers Endogenous i[Fleet])
+	~	vehicles/Month
+	~	The rate of new vehicle buyers from each current platform i.
+	|
+
+New Vehicle Buyers Endogenous i[Fleet]=
+	New Vehicle Retirements i[Fleet]+Used Vehicle Retirements i[Fleet]
+	~	vehicles/Month
+	~	The fraction of new vehicle buyers by platform i, if assuming the rate of \
+		new vehicle sales simulated by the model.
+	|
+
+Average Segment Market Share=
+	0.3899
+	~	dmnl
+	~	The assumed constant average market share of the segment in which the \
+		Toyota Prius competes.
+	|
+
+Start Date=
+	0
+	~	Month
+	~	The date at which estimation of model parameters begins.
+	|
+
+WeightWLVehicles=
+	IF THEN ELSE(Time<Start Date, 0, ZIDZ(1,SQRT(2)*StDevWLVehicles))
+	~	dmnl
+	~	The weight placed on waitlist residuals in term 2 of the Log-Likelihood \
+		function.
+	~	:SUPPLEMENTARY 
+	|
+
+Term2WLVehicles=
+	IF THEN ELSE(Time<Start Date, 0, SQRT(IF THEN ELSE(StDevWLVehicles>0, LN(StDevWLVehicles\
+		), 0)))
+	~	dmnl
+	~	The second term of the Log-Likelihood function, capturing variation in the \
+		waitlist.
+	~	:SUPPLEMENTARY 
+	|
+
+Term2Sales=
+	IF THEN ELSE(Time<Start Date, 0, SQRT(IF THEN ELSE(StDevSales>0, LN(StDevSales), 0))\
+		)
+	~	dmnl
+	~	The second term of the Log-Likelihood function, capturing variation in \
+		sales.
+	~	:SUPPLEMENTARY 
+	|
+
+Term1=
+	IF THEN ELSE(Time<Start Date, 0, SQRT((1/2)*LN(2*3.14159)))
+	~	dmnl
+	~	The first term of the Log-Likelihood function.
+	~	:SUPPLEMENTARY 
+	|
+
+WeightSales=
+	IF THEN ELSE(Time<Start Date, 0, ZIDZ(1,SQRT(2)*StDevSales))
+	~	dmnl
+	~	The weight placed on sales residuals in term 2 of the Log-Likelihood \
+		function.
+	~	:SUPPLEMENTARY 
+	|
+
+X=
+	 Historical
+	~	Units
+	~	The historical data input
+	|
+
+One=
+	1
+	~	dmnl
+	~	A constant of value 1 (used in Vensim optimization of Log-Likelihood \
+		function)
+	~	:SUPPLEMENTARY 
+	|
+
+StDevSales=
+	1000
+	~	dmnl
+	~	The standard deviation of sales residuals.
+	|
+
+Zero:INTERPOLATE::=
+	0
+	~	dmnl
+	~	A constant of value 0 (used in Vensim optimization of Log-Likelihood \
+		function)
+	~	:SUPPLEMENTARY 
+	|
+
+StDevWLVehicles=
+	10000
+	~	dmnl
+	~	The standard deviation of waitlist residuals.
+	|
+
+Effective Contact Rate Waitlisted Prius Buyers SQ=
+	0
+	~	dmnl/Month
+	~	The amount of socialization that results from contact with a waitlisted \
+		Prius buyer (quadratic).
+	|
+
+Socialization Effect of Waitlisted Prius Buyers=
+	(Probability of Contact with Waitlisted Prius Buyer)*(Effective Contact Rate Waitlisted Prius Buyers\
+		)+(Effective Contact Rate Waitlisted Prius Buyers SQ*(Probability of Contact with Waitlisted Prius Buyer\
+		^2))*100000
+	~	dmnl/Month
+	~	The amount of socialization that results from contact with waitlisted \
+		Prius buyers.
+	|
+
+Reporting Period=
+	1
+	~	Month
+	~	The time period for discrete data reporting.
+	|
+
+Check Reporting=
+	MODULO(Time, Reporting Period)
+	~	Month
+	~	Take the modulo of time by reporting period.
+	|
+
+Socialization Effect of Marketing=
+	Prius Marketing Effectiveness*(UPL US Prius Marketing Spend/Dollars per Thousand)/1000
+	~	dmnl/Month
+	~	The amount of socialization that results from exposure to Prius \
+		advertising.
+	|
+
+Desired Shipping Rate=
+	(Waitlist/Target Delivery Delay)
+	~	vehicles/Month
+	~	The desired shipping rate is the desired rate that vehicles be shipped \
+		given the number of customers on the waitlist and the target delivery \
+		delay to fulfil those orders.
+	|
+
+Effective Contact Rate Waitlisted Prius Buyers=
+	0
+	~	dmnl/Month [-1,1,0.005]
+	~	The amount of socialization that results from contact with a waitlisted \
+		Prius buyer (linear).
+	|
+
+Size of Prius Market=
+	UPL US Monthly Light Vehicle Sales*UPL Car Share of Light Vehicle Sales*UPL Prius Class Share of Car Segment
+	~	vehicles/Month
+	~	The number of vehicles that are sold each month in the market in which the \
+		Prius competes.
+	|
+
+Discards Prius to Gas=
+	SUM(Share ij[Technology!,TechnologyTo!]*Select Prius to Gas[Technology!,TechnologyTo\
+		!])*Prius Discard Fr*Size of Prius Market
+	~	vehicles/Month
+	~	The rate (in vehicles/month) at which people are discarding the Prius in \
+		favor of Gas.
+	|
+
+Sales Prius from Gas=
+	SUM(Share ij[Technology!,TechnologyTo!]*Select Gas to Prius[Technology!,TechnologyTo\
+		!])*Gas Discard Fr*Size of Prius Market
+	~	vehicles/Month
+	~	The rate (in vehicles/month) at which people adopt the Prius having \
+		previously driven Gas.
+	|
+
+Prius Driver Fr from Used=
+	Used Vehicles i[PRIUS]/SUM(Used Vehicles i[Technology!])
+	~	dmnl
+	~	The fraction of Prius vehicles in the used vehicle fleet.
+	|
+
+Prius Driver Fr from New Vehicle Retirements and Vehicle Aging=
+	New Vehicles i[PRIUS]/SUM(New Vehicles i[Technology!])
+	~	dmnl
+	~	The fraction of Prius vehicles in the new vehicle fleet.
+	|
+
+New Vehicle Retirements i[Fleet]=
+	NV Discard Fr*New Vehicles i[Fleet]
+	~	vehicles/Month
+	~	The rate of new vehicle retirements is the fraction of the new vehicle \
+		stock that retires each month, given by the new vehicle discard fraction.
+	|
+
+New Vehicle Buyers Exogenous i[PRIUS]=
+	UPL US Monthly Light Vehicle Sales*((Fr New Sales from New Vehicle Drivers*Prius Driver Fr from New Vehicle Retirements and Vehicle Aging\
+		)+((1-Fr New Sales from New Vehicle Drivers)*Prius Driver Fr from Used)) ~~|
+New Vehicle Buyers Exogenous i[GAS]=
+	UPL US Monthly Light Vehicle Sales-New Vehicle Buyers Exogenous i[PRIUS]
+	~	vehicles/Month
+	~	The fraction of new vehicle buyers by platform i, if assuming the actual \
+		rate of new vehicle sales from data.
+	|
+
+Fr New Sales from New Vehicle Drivers=
+	0.4
+	~	dmnl [0,1]
+	~	The assumed fraction of new vehicle buyers that come from people who \
+		currently own a new vehicle.
+	|
+
+Used Vehicle Retirements i[Technology]=
+	Used Vehicles i[Technology]/Retirement Time
+	~	vehicles/Month
+	~	The rate of used vehicle retirements is equal to the stock of used \
+		vehicles divided by the average retirement time.
+	|
+
+Retirement Time=
+	120
+	~	Month
+	~	The average time (in months) at which a used vehicle is retired from the \
+		fleet.
+	|
+
+NV Discard Fr=
+	0.01/12
+	~	dmnl/Month
+	~	The fraction of new vehicles that are retired from the new vehicle stock \
+		due to crashes (1%/year)
+	|
+
+Installed Base i[Technology]=
+	New Vehicles i[Technology]+Used Vehicles i[Technology]
+	~	vehicles
+	~	The total installed base by platform i is the sum of new vehicles and old \
+		vehicles.
+	|
+
+Used Vehicles i[Technology]= INTEG (
+	Vehicle Aging i[Technology]-Used Vehicle Retirements i[Technology],
+		Initial Installed Base Used Vehicles i[Technology])
+	~	vehicles
+	~	The stock of used vehicles accumulates the aging of formerly new vehicles, \
+		less those vehicles that are retired due to crashes or reaching the end of \
+		their useful life.
+	|
+
+New Vehicles i[Technology]= INTEG (
+	Vehicle Sales i[Technology]-Vehicle Aging i[Technology]-New Vehicle Retirements i[Technology\
+		],
+		Initial Installed Base New Vehicles i[Technology])
+	~	vehicles
+	~	The stock of new vehicles accumulates new vehicle sales by platform i, \
+		less vehicles no longer new due to aging and retirements.
+	|
+
+SW Demand Side Diffusion Only=
+	0
+	~	dmnl [0,1,1]
+	~	A binary switch indicating with the model is being estimated as the full \
+		Supply Constraints Model (0) or only as the Demand Model (1).
+	|
+
+SW Input Data=
+	1
+	~	dmnl [0,2,1]
+	~		|
+
+Fleet:
+	GAS, PRIUS
+	~	
+	~		|
+
+Total Familiarity Loss Prius=
+	MAX(0, Familiarity with Prius*Sales Prius from Gas)
+	~	vehicles/Month
+	~	The loss in Prius familiarity within the Gas driving population resulting \
+		from drivers switching from Gas to Prius.
+	|
+
+Dollars per Thousand=
+	1e+06
+	~	$/$000
+	~	Converting dollars to thousands of dollars.
+	|
+
+Market Segment Indicator Variable=
+	IF THEN ELSE(Time<Prius Market Sector Upgrade Time, 0, 1)
+	~	dmnl
+	~	A dummy variable indicating whether the Prius is in the compact car \
+		segment (O) or the midsize car segment (1)
+	|
+
+Prius Market Sector Upgrade Time=
+	46
+	~	Month
+	~	The time (months) at which the Prius moves from the compact vehicle \
+		segment (Gen I) to the midsize car segment (Gen II)
+	|
+
+UPL Prius Class Share of Car Segment=
+	IF THEN ELSE(Market Segment Indicator Variable=0, UPL Compact Class Share of Car Sales\
+		, UPL Midsize Class Share of Car Sales)
+	~	dmnl
+	~	Market share of the market segment in which the Prius is currently \
+		competing, in the car market.
+	|
+
+UPL Midsize Class Share of Car Sales:=
+	GET XLS DATA('UPL Prius Data.xls', 'Sales', 'B', 'L2')
+	~	Dimensionless
+	~	Market share of the compact car market segment within the car market
+	|
+
+Prius MPG:=
+	GET XLS DATA('UPL Prius Data.xls', 'Prius Attributes', 'B', 'G2')
+	~	miles/gallon
+	~	The fuel economy of the Toyota Prius (miles/gallon)
+	|
+
+Prius MSRP:=
+	GET XLS DATA('UPL Prius Data.xls', 'Prius Attributes', 'B', 'C2')
+	~	$/vehicles
+	~	The Manufacturer's Suggested Retail Price (MSRP) of the Toyota Prius
+	|
+
+Camry MPG:=
+	GET XLS DATA('UPL Prius Data.xls', 'Camry Attributes', 'B', 'G2')
+	~	miles/gallon
+	~	The fuel economy of the Toyota Camry (miles/gallon)
+	|
+
+Camry MSRP:=
+	GET XLS DATA('UPL Prius Data.xls', 'Camry Attributes', 'B', 'C2')
+	~	$/vehicles
+	~	The Manufacturer's Suggested Retail Price (MSRP) of the Toyota Camry
+	|
+
+Corolla MPG:=
+	GET XLS DATA('UPL Prius Data.xls', 'Corolla Attributes', 'B', 'G2')
+	~	miles/gallon
+	~	The fuel economy of the Toyota Corolla (miles/gallon)
+	|
+
+Corolla MSRP:=
+	GET XLS DATA('UPL Prius Data.xls', 'Corolla Attributes', 'B', 'C2')
+	~	$/vehicles
+	~	The Manufacturer's Suggested Retail Price (MSRP) of the Toyota Corolla
+	|
+
+UPL Compact Class Share of Car Sales:=
+	GET XLS DATA('UPL Prius Data.xls', 'Sales', 'B', 'K2')
+	~	Dimensionless
+	~	Market share of the compact car market segment within the car market
+	|
+
+Yi = pick*Y
+	~	Units
+	~	Sampled simulated variable
+	|
+
+dt = TIME STEP
+	~	Month
+	~		|
+
+r = ZIDZ(Mxy-(M X*M Y),Sx*Sy)
+	~	Dimensionless
+	~	Correlation coefficient. Calculated through the 'hand computation' formula.
+		   Sterman (1984) pg. 63
+	|
+
+"R^2" = r*r
+	~	Dimensionless
+	~	Correlation coefficient squared
+	~	:SUPPLEMENTARY 
+	|
+
+Sum Xi = INTEG(Xi/dt,0)
+	~	Units
+	~	Sum of x's (simulated)
+	|
+
+Sum Yi = INTEG(Yi/dt,0)
+	~	Units
+	~	Sum of y'
+	|
+
+SumX2 = INTEG(Xi*Xi/dt,0)
+	~	Units*Units
+	~	Sum of x^
+	|
+
+SumXY = INTEG(Xi*Yi/dt,0)
+	~	Units*Units
+	~	Sum of x*y
+	|
+
+Residuals=
+	Yi - Xi
+	~	Units
+	~	Errors
+	~	:SUPPLEMENTARY 
+	|
+
+RMSE=
+	IF THEN ELSE(MSE>0, SQRT(MSE), 0)
+	~	Units
+	~	Root Mean Square Error
+	~	:SUPPLEMENTARY 
+	|
+
+Count = INTEG(pick/dt,0)
+	~	Dimensionless
+	~	Counter for # of points
+	|
+
+End Time=
+	125
+	~	Month
+	~	Date of last data point
+	|
+
+Uc = ZIDZ(dif cov,MSE)
+	~	Dimensionless
+	~	Covariance inequality proportion
+	~	:SUPPLEMENTARY 
+	|
+
+Interval=
+	1
+	~	Month
+	~	Interval between data points
+	|
+
+Um = ZIDZ(dif mea,MSE)
+	~	Dimensionless
+	~	Bias inequality proportion
+	~	:SUPPLEMENTARY 
+	|
+
+pick=
+	STEP(1,Start Date)*(1-STEP(1,End Time + TIME STEP/2))*IF THEN ELSE(Time/Interval = INTEGER\
+		(Time/Interval),1 , 0 )
+	~	Dimensionless
+	~	Takes a value of one for every data point available, assuming the data are \
+		available at intervals of Interval between the Start Time and End Time.
+	|
+
+dif mea = (M X-M Y)*(M X-M Y)
+	~	Units*Units
+	~	Difference of Means (bias)
+	|
+
+Sx=
+	 SQRT(MX2-(M X*M X))
+	~	Units
+	~	Standard Deviation of x. Calculated using the 'hand computation'
+		formula
+		   to calculate the standard deviation without prior knowledge of
+		the mean.
+		   Sterman (1984), pg. 64
+	|
+
+Sy = SQRT(MY2-(M Y*M Y))
+	~	Units
+	~	Standard Deviation of y. Calculated using the 'hand computation'
+		formula
+		   to calculate the standard deviation without prior knowledge of
+		the mean.
+		   Sterman (1984), pg. 64
+	|
+
+M Y = ZIDZ(Sum Yi,Count)
+	~	Units
+	~	Mean of y (sum y)/n
+	|
+
+dif cov = 2*Sx*Sy*(1-r)
+	~	Units*Units
+	~	Difference of covariances
+	|
+
+Us = ZIDZ(dif var,MSE)
+	~	Dimensionless
+	~	Variance inequality proportion
+	~	:SUPPLEMENTARY 
+	|
+
+dif var = (Sx-Sy)*(Sx-Sy)
+	~	Units*Units
+	~	Difference of variances
+	|
+
+Mxy = ZIDZ(SumXY,Count)
+	~	Units*Units
+	~	Mean of x*y (sum x*y)/n
+	|
+
+Sum AE= INTEG (
+	ABS(Xi - Yi)/dt,
+		0)
+	~	Units
+	~	Sum of Absolute Errors
+	|
+
+Sum APE = INTEG(ABS(ZIDZ(Xi-Yi,Yi))/dt,0)
+	~	Dimensionless
+	~	Sum of Absolute Percent Errors
+	|
+
+Y=
+	 Simulated
+	~	Units
+	~	The simulated data series
+	|
+
+MSE = dif mea + dif var + dif cov
+	~	Units*Units
+	~	Mean Square Error. The addition of the three components
+	|
+
+MX2=
+	 ZIDZ(SumX2,Count)
+	~	Units*Units
+	~	Mean of x^2 (sum x^2)/n
+	|
+
+M X = ZIDZ(Sum Xi,Count)
+	~	Units
+	~	Mean of x (sum x)/n
+	|
+
+SumY2 = INTEG(Yi*Yi/dt,0)
+	~	Units*Units
+	~	Sum of y^
+	|
+
+Xi = pick*X
+	~	Units
+	~	The historic data series
+	|
+
+MAPE = ZIDZ(Sum APE,Count)
+	~	Dimensionless
+	~	Mean Absolute Percent Error
+	~	:SUPPLEMENTARY 
+	|
+
+MY2 = ZIDZ(SumY2,Count)
+	~	Units*Units
+	~	Mean of y^2 (sum y^2)/n
+	|
+
+MAE over Mean=
+	ZIDZ(ZIDZ(Sum AE,Count),M X)
+	~	Dimensionless
+	~	Mean Absolute Error as a fraction of the mean of the data
+	~	:SUPPLEMENTARY 
+	|
+
+UPL US Prius Marketing Spend:=
+	GET XLS DATA('UPL Prius Data.xls', 'Marketing', 'B', 'C2')
+	~	$/Month
+	~	Toyota's monthly average marketing spending on the Toyota Prius.
+	|
+
+Initial Familiarity with Prius=
+	0
+	~	vehicles [0,1,0.05]
+	~	9.433e+06
+	|
+
+Vehicle Aging i[Technology]=
+	New Vehicles i[Technology]/Aging Time Lambda
+	~	vehicles/Month
+	~	The rate of vehicle aging is given by the stock of new vehicles divided by \
+		the average aging time lambda.
+	|
+
+Installed Base Fr i[Technology]=
+	Installed Base i[Technology]/SUM(Installed Base i[Technology!])
+	~	dmnl
+	~		~	:SUPPLEMENTARY 
+	|
+
+Initial Installed Base New Vehicles i[GAS]=
+	8e+07 ~~|
+Initial Installed Base New Vehicles i[PRIUS]=
+	0
+	~	vehicles
+	~	The assumed initial fleet of new vehicles by current platform i.
+	|
+
+Initial Installed Base Used Vehicles i[GAS]=
+	1.6e+08 ~~|
+Initial Installed Base Used Vehicles i[PRIUS]=
+	0
+	~	vehicles
+	~	The assumed initial fleet size of used vehicles by current platform i.
+	|
+
+Prius Share of Customer Demand i[Technology]=
+	IF THEN ELSE(Time<Prius Introduction Date, 0, SUM(Share ij[Technology,TechnologyTo!]\
+		*Matrix Entrant Selection ij[Technology,TechnologyTo!]))
+	~	dmnl
+	~	Customer demand for the Prius (market share) by each current platform i.
+	|
+
+Prius Introduction Date=
+	4
+	~	Month
+	~	The month in which the Prius is launched into the United States market.
+	|
+
+UPL Car Share of Light Vehicle Sales:=
+	GET XLS DATA('UPL Prius Data.xls', 'Sales', 'B', 'J2')
+	~	dmnl
+	~	The market share of cars (vs light trucks) within the light vehicle market.
+	|
+
+Affinity ij[Technology,TechnologyTo]=
+	Familiarity ij[Technology,TechnologyTo]*EXP Utility j[TechnologyTo]
+	~	dmnl
+	~	The affinity that drivers of platform i have with platform j is the \
+		project of their familiarity with platform j and the utility they derive \
+		from platform j.
+	|
+
+EXP Utility j[TechnologyTo]=
+	EXP(Utility j[TechnologyTo])
+	~	dmnl
+	~	EXP Utility j takes the exponential of the utility of platform j, as is \
+		used in the standard multinomial logit formation.
+	|
+
+Share ij[Technology,TechnologyTo]=
+	Affinity ij[Technology,TechnologyTo]/SUM(Affinity ij[Technology,TechnologyTo!])
+	~	dmnl
+	~	The market share of each technology j for drivers of technology i is equal \
+		the affinity of ij divided by the sum of affinities of all j's for each i.
+	|
+
+"Prius Market Share - Simulated"=
+	Dealer Prius Sales/UPL US Monthly Light Vehicle Sales
+	~	dmnl
+	~	The simulated market share of the Toyota Prius within the total light \
+		vehicle market.
+	~	:SUPPLEMENTARY 
+	|
+
+Familiarity of Prius Discarders=
+	1
+	~	dmnl
+	~	The assumed familiarity that drivers discarding a Prius are assumed to \
+		keep about the Prius.
+	|
+
+TechnologyTo:
+	GAS, PRIUS
+	~	
+	~		|
+
+Total Familiarity Gain Prius=
+	Familiarity of Prius Discarders*Discards Prius to Gas
+	~	vehicles/Month
+	~	The gain in Prius familiarity within the Gas driving population resulting \
+		from drivers switching from Prius to Gas.
+	|
+
+Matrix Entrant Selection ij[Technology,TechnologyTo]=
+	IF THEN ELSE(TechnologyTo=PRIUS,1,0)
+	~	dmnl
+	~	A dummy variable selecting only where platform j is the Prius.
+	|
+
+Select Gas to Prius[Technology,TechnologyTo]=
+	IF THEN ELSE(Technology=GAS:AND:TechnologyTo=PRIUS,1,0)
+	~	dmnl
+	~	A binary variable selecting buyers moving from a Gas vehicle to a Prius.
+	|
+
+UPL State Government Incentives Prius:=
+	GET XLS DATA('UPL Prius Data.xls', 'State Government Incentives', 'B', 'C2')
+	~	$/vehicles
+	~	The average state goverment financial incentive offered for hybrid vehicle \
+		adoption ($/vehicle)
+	|
+
+Technology:
+	GAS, PRIUS
+	~	
+	~		|
+
+Select Prius to Gas[Technology,TechnologyTo]=
+	IF THEN ELSE(TechnologyTo=GAS:AND:Technology=PRIUS,1,0)
+	~	dmnl
+	~	A binary variable selecting buyers moving from the Prius to a Gas vehicle.
+	|
+
+Prius Marketing Effectiveness=
+	0
+	~	dmnl/$000 [0,0.2,0.0005]
+	~	The amount of socialization that results from each $1,000 of Prius \
+		advertising spending.
+	|
+
+Aging Time Lambda=
+	60
+	~	Month
+	~	The aging time lambda is the average age (in months) at which a new \
+		vehicle is considered an old vehicle.
+	|
+
+Socialization Effect of Prius Drivers=
+	Probability of Contact with Prius Driver*Effective Contact Rate Prius Drivers
+	~	dmnl/Month
+	~	The amount of socialization that results from contact with Prius adopters.
+	|
+
+Effective Contact Rate Prius Drivers=
+	0
+	~	dmnl/Month [0,10,0.1]
+	~	The amount of socialization that results from contact with a Prius adopter.
+	|
+
+Familiarity Gain=
+	Total Social Exposure to Platform*(1-Familiarity with Prius)
+	~	dmnl/Month
+	~	The gain in Prius familiarity that occurs as a result of social exposure \
+		to the Prius, which exhibits saturation as familiarity grows.
+	|
+
+SW Endogenous Drivers=
+	1
+	~	dmnl [0,1,1]
+	~		|
+
+UPL Waitlist Length:INTERPOLATE::=
+	GET XLS DATA('UPL Prius Data.xls', 'Sales', 'B', 'H2')
+	~	Month
+	~	The observed length of the Prius waitlist (months).
+	|
+
+"Prius Market Share - Actual"=
+	ZIDZ( UPL US Monthly Prius Sales, UPL US Monthly Light Vehicle Sales)
+	~	dmnl
+	~	The actual market share of the Toyota Prius within the total light vehicle \
+		market.
+	~	:SUPPLEMENTARY 
+	|
+
+Maximum Shipping Rate=
+	Dealer Inventory/Minimum Dealer Delay
+	~	vehicles/Month
+	~	The maximum shipping rate is the maximum rate that vehicles could be \
+		shipped given dealer inventory and minimum dealer delay needed to prepare \
+		that inventory.
+	|
+
+Minimum Dealer Delay=
+	0.1
+	~	Month
+	~	The minimum delivery delay is the minimum time required to prepare a \
+		vehicle from inventory for sale.
+	|
+
+Sales Data:=
+	GET XLS DATA('UPL Prius Data.xls', 'Sales', 'B', 'C1')
+	~	vehicles/Month
+	~		~	:SUPPLEMENTARY 
+	|
+
+Target Delivery Delay=
+	0.1
+	~	Month
+	~	The target delivery delay is the target time needed to fulfil the order of \
+		a waitlisted customer.
+	|
+
+UPL Federal Tax Credit Prius:=
+	GET XLS DATA('UPL Prius Data.xls', 'Sales', 'B', 'G2')
+	~	$/vehicles
+	~	The federal tax credit offered for hybrid vehicle adoption ($/vehicle)
+	|
+
+UPL US Monthly Prius Sales:=
+	GET XLS DATA('UPL Prius Data.xls', 'Sales', 'B', 'C2')
+	~	vehicles/Month
+	~	Monthly sales of the Toyota Prius in the United States.
+	|
+
+UPL US Monthly Light Vehicle Sales:=
+	GET XLS DATA('UPL Prius Data.xls', 'Sales', 'B', 'E2')
+	~	vehicles/Month
+	~	Monthly sales of all light vehicles (cars and light trucks) in the United \
+		States.
+	|
+
+UPL US Average Retail Gasoline Price:=
+	GET XLS DATA('UPL Prius Data.xls', 'Sales', 'B', 'F2')
+	~	cents/gallon
+	~	The nominal US monthly average retail price of gasoline ($/gallon).
+	|
+
+Dealer Inventory= INTEG (
+	Deliveries to Dealers-Dealer Prius Sales,
+		0)
+	~	vehicles
+	~	The dealer inventory increases with vehicle deliveries to dealers, and \
+		decreases with sales to customers.
+	|
+
+********************************************************
+	.Control
+********************************************************~
+		Simulation Control Parameters
+	|
+
+FINAL TIME  = 120
+	~	Month
+	~	The final time for the simulation.
+	|
+
+INITIAL TIME  = 0
+	~	Month
+	~	The initial time for the simulation.
+	|
+
+SAVEPER  = 
+        TIME STEP
+	~	Month [0,?]
+	~	The frequency with which output is stored.
+	|
+
+TIME STEP  = 0.03125
+	~	Month [0,?]
+	~	The time step for the simulation.
+	|
+
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*Supply Chain
+$192-192-192,0,Arial|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|72,72,5,0
+10,1,Waitlist,392,400,40,20,3,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+12,2,48,236,397,10,8,0,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,3,5,1,4,0,0,22,0,0,0,-1--1--1,,1|(323,398)|
+1,4,5,2,100,0,0,22,0,0,0,-1--1--1,,1|(264,398)|
+11,5,48,289,398,6,8,34,3,0,0,1,0,0,0
+10,6,Customer Demand for Prius,289,420,53,14,40,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+12,7,48,571,398,10,8,0,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,8,10,7,4,0,0,22,0,0,0,-1--1--1,,1|(530,399)|
+1,9,10,1,100,0,0,22,0,0,0,-1--1--1,,1|(460,399)|
+11,10,48,494,399,6,8,34,3,0,0,1,0,0,0
+10,11,Order Fulfilment,494,421,30,14,40,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,12,Dealer Inventory,436,119,40,20,3,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,13,14,12,4,0,0,22,0,0,0,-1--1--1,,1|(361,120)|
+11,14,3532,320,120,6,8,34,3,0,0,1,0,0,0
+10,15,Deliveries to Dealers,320,143,38,14,40,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+12,16,48,618,119,10,8,0,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,17,19,16,4,0,0,22,0,0,0,-1--1--1,,1|(580,120)|
+1,18,19,12,100,0,0,22,0,0,0,-1--1--1,,1|(508,120)|
+11,19,48,546,120,6,8,34,3,0,0,1,0,0,0
+10,20,Dealer Prius Sales,546,142,38,14,40,131,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,21,Desired Shipping Rate,338,272,43,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,22,1,21,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(339,325)|
+10,23,Target Delivery Delay,252,333,46,14,8,3,0,18,0,0,0,0,0-0-0,0-0-0,|12|B|255-128-0
+1,24,23,21,1,0,45,0,2,64,0,-1--1--1,|12||0-0-0,1|(286,307)|
+1,25,21,20,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(456,158)|
+10,26,Maximum Shipping Rate,491,50,43,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,27,26,20,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(545,97)|
+1,28,12,26,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(452,67)|
+10,29,Minimum Dealer Delay,343,45,38,14,8,3,0,18,0,0,0,0,-1--1--1,0-0-0,|12|B|255-128-0
+1,30,29,26,1,0,45,0,2,64,0,-1--1--1,|12||0-0-0,1|(390,35)|
+12,31,0,316,167,15,15,4,7,2,0,-1,0,0,0
+B2
+12,32,0,165,155,52,14,8,7,2,0,-1,0,0,0
+Inventory Management Loop
+10,33,Prius Share of Customer Demand i,133,487,63,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,34,33,6,0,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(204,456)|
+10,35,Customer Demand for Prius,522,322,46,20,8,130,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+10,36,SW Demand Side Diffusion Only,424,321,53,14,8,3,0,18,0,0,0,0,0-0-0,0-0-0,|12|B|255-0-255
+10,37,Time,77,477,22,8,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,38,20,10,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(590,201)|
+10,39,Average Segment Market Share,307,506,45,20,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,40,39,6,0,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(298,466)|
+10,41,New Vehicle Buyers i,215,537,41,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,42,41,6,0,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(247,484)|
+10,43,"Waitlist Length (Months)",447,499,46,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,44,1,43,1,0,43,0,2,192,0,-1--1--1,|12||0-0-0,1|(409,442)|
+1,45,36,10,1,0,0,0,0,64,0,-1--1--1,,1|(466,374)|
+1,46,35,10,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(513,357)|
+12,47,48,234,119,10,8,0,3,0,0,-1,0,0,0
+1,48,14,47,100,0,0,22,0,0,0,-1--1--1,,1|(279,120)|
+10,49,UPL Dealership Deliveries,220,191,50,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,50,49,15,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(251,160)|
+1,51,11,43,1,0,45,0,2,192,0,-1--1--1,|12||0-0-0,1|(481,447)|
+12,52,0,928,164,150,150,3,44,0,0,1,0,0,0
+Graph_for_Sales
+12,53,0,928,468,150,150,3,44,0,0,1,0,0,0
+Graph_Waitlist
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*Fleet Turnover
+$192-192-192,0,Arial|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|72,72,5,0
+10,1,New Vehicles i,456,248,32,14,3,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+12,2,48,259,250,10,8,0,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,3,5,1,4,0,0,22,0,0,0,-1--1--1,,1|(382,252)|
+1,4,5,2,100,0,0,22,0,0,0,-1--1--1,,1|(300,252)|
+11,5,48,336,252,5,6,34,3,0,0,1,0,0,0
+10,6,Vehicle Sales i,336,266,44,8,40,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,7,8,1,100,0,0,22,0,0,0,-1--1--1,,1|(519,252)|
+11,8,1500,556,252,5,6,34,3,0,0,1,0,0,0
+10,9,Vehicle Aging i,556,266,45,8,40,131,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,10,Installed Base i,567,122,46,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,11,1,10,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(487,161)|
+1,12,1,9,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(499,221)|
+10,13,Initial Installed Base New Vehicles i,821,43,60,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,14,Aging Time Lambda,561,182,59,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,15,Used Vehicles i,664,250,30,15,3,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,16,8,15,4,0,0,22,0,0,0,-1--1--1,,1|(597,252)|
+1,17,14,9,1,0,45,0,2,64,0,-1--1--1,|12||0-0-0,1|(564,223)|
+10,18,UPL US Monthly Light Vehicle Sales,404,525,61,14,8,130,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+10,19,Initial Installed Base Used Vehicles i,828,110,62,19,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,20,15,10,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(633,167)|
+12,21,48,454,346,10,8,0,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,22,24,21,4,0,0,22,0,0,0,-1--1--1,,1|(452,318)|
+1,23,24,1,100,0,0,22,0,0,0,-1--1--1,,1|(452,275)|
+11,24,48,452,293,6,5,33,3,0,0,4,0,0,0
+10,25,New Vehicle Retirements i,499,293,41,14,40,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|255-0-0
+12,26,48,665,348,10,8,0,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,27,29,26,4,0,0,22,0,0,0,-1--1--1,,1|(665,320)|
+1,28,29,15,100,0,0,22,0,0,0,-1--1--1,,1|(665,277)|
+11,29,48,665,295,6,5,33,3,0,0,4,0,0,0
+10,30,Used Vehicle Retirements i,712,295,41,14,40,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|255-0-0
+1,31,13,1,0,0,0,0,0,64,1,-1--1--1,,1|(644,142)|
+10,32,New Vehicle Buyers Exogenous i,581,466,62,20,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,33,18,32,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(494,488)|
+10,34,Prius Driver Fr from New Vehicle Retirements and Vehicle Aging,485,386,74,21,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,35,Prius Driver Fr from Used,621,382,44,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,36,35,32,0,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(605,414)|
+1,37,34,32,1,0,0,0,0,64,0,-1--1--1,,1|(518,427)|
+10,38,Fr New Sales from New Vehicle Drivers,395,461,60,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,39,38,32,0,0,43,0,2,192,0,-1--1--1,|12||0-0-0,1|(480,462)|
+1,40,19,15,0,0,0,0,0,64,1,-1--1--1,,1|(748,177)|
+1,41,15,30,1,0,0,0,0,64,0,-1--1--1,,1|(709,257)|
+1,42,1,25,1,0,0,0,0,64,0,-1--1--1,,1|(491,269)|
+10,43,NV Discard Fr,594,329,42,8,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,44,43,25,0,0,0,0,0,64,0,-1--1--1,,1|(560,316)|
+10,45,Retirement Time,794,248,49,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,46,45,30,1,0,0,0,0,64,0,-1--1--1,,1|(772,256)|
+1,47,1,34,1,0,0,0,0,64,0,-1--1--1,,1|(427,298)|
+1,48,15,35,1,0,0,0,0,64,0,-1--1--1,,1|(654,294)|
+10,49,New Vehicle Buyers Endogenous i,748,467,42,21,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,50,25,49,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(558,355)|
+1,51,30,49,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(736,378)|
+10,52,New Vehicle Buyers i,660,539,37,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,53,32,52,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(598,504)|
+1,54,49,52,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(718,508)|
+10,55,New Vehicle Buyers i,277,151,41,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,56,55,5,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(293,201)|
+10,57,SW Exogenous New Vehicle Sales Rate,804,594,61,14,8,3,0,18,0,0,0,0,0-0-0,0-0-0,|12|B|255-0-255
+1,58,57,52,1,0,0,0,0,64,0,-1--1--1,,1|(709,571)|
+10,59,Initial Fleet Size,961,83,47,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,60,13,59,0,0,0,0,0,64,0,-1--1--1,,1|(894,64)|
+1,61,19,59,0,0,0,0,0,64,0,-1--1--1,,1|(898,96)|
+10,62,Order Fulfilment,188,306,56,8,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,63,62,6,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(277,286)|
+10,64,SW Exogenous Sales,227,358,46,14,8,3,0,18,-1,0,0,0,0-0-0,0-0-0,|12|B|255-0-255
+1,65,64,6,0,0,0,0,0,64,0,-1--1--1,,1|(279,313)|
+10,66,UPL US Monthly Prius Sales,338,345,53,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,67,66,6,0,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(337,309)|
+10,68,UPL US Monthly Light Vehicle Sales,366,178,61,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,69,68,6,0,0,43,0,2,192,0,-1--1--1,|12||0-0-0,1|(352,218)|
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*Familiarity
+$192-192-192,0,Arial|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|72,72,5,0
+12,1,48,713,451,10,8,0,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,2,3,1,100,0,0,22,0,0,0,-1--1--1,,1|(715,479)|
+11,3,48,715,504,6,5,33,3,0,0,4,0,0,0
+10,4,Familiarity Gain,752,504,32,14,40,131,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,5,Total Social Exposure to Platform,662,427,37,21,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,6,5,4,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(667,444)|
+10,7,Socialization Effect of Prius Drivers,793,335,58,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,8,Probability of Contact with Prius Driver,869,245,56,21,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|255-0-0
+10,9,Installed Base i,998,173,56,13,8,130,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,10,8,7,1,0,43,0,2,192,0,-1--1--1,|12||0-0-0,1|(809,289)|
+1,11,7,5,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(719,358)|
+10,12,Socialization Effect of Marketing,464,401,57,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,13,12,5,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(545,403)|
+12,14,48,715,562,10,8,0,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,15,3,14,4,0,0,22,0,0,0,-1--1--1,,1|(715,531)|
+12,16,48,715,579,10,8,0,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+12,17,48,738,570,10,8,0,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,18,Familiarity with Prius,710,576,37,22,3,130,0,20,-1,0,0,0,0-0-0,255-255-128,|12|B|128-128-128
+1,19,18,4,1,0,45,0,2,64,0,-1--1--1,|12||0-0-0,1|(697,528)|
+10,20,Effective Contact Rate Prius Drivers,961,310,55,14,8,3,0,18,0,0,0,0,0-0-0,0-0-0,|12|B|255-128-0
+1,21,20,7,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(872,296)|
+10,22,Prius Marketing Effectiveness,293,464,47,14,8,3,0,18,0,0,0,0,0-0-0,0-0-0,|12|B|255-128-0
+1,23,22,12,1,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(389,414)|
+10,24,Socialization Effect of Waitlisted Prius Buyers,627,317,70,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,25,24,5,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(640,386)|
+10,26,Probability of Contact with Waitlisted Prius Buyer,632,225,64,25,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|255-0-0
+10,27,Effective Contact Rate Waitlisted Prius Buyers,453,224,70,14,8,3,0,18,0,0,0,0,0-0-0,0-0-0,|12|B|255-128-0
+1,28,26,24,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(623,276)|
+1,29,27,24,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(524,286)|
+10,30,UPL US Prius Marketing Spend,262,360,55,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+10,31,Dollars per Thousand,286,414,34,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,32,31,12,1,0,45,0,2,64,0,-1--1--1,|0||-1--1--1,1|(353,398)|
+1,33,30,12,1,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(357,366)|
+10,34,Installed Base i,726,130,33,13,8,130,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,35,34,26,1,0,45,0,2,64,0,-1--1--1,|12||0-0-0,1|(675,160)|
+1,36,9,8,1,0,0,0,0,64,0,-1--1--1,,1|(934,192)|
+10,37,Effective Contact Rate Waitlisted Prius Buyers SQ,424,285,67,21,8,3,0,18,0,0,0,0,0-0-0,0-0-0,|12|B|255-128-0
+1,38,37,24,1,0,43,0,2,192,0,-1--1--1,|0||-1--1--1,1|(522,306)|
+10,39,Waitlist,634,92,43,8,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,40,39,26,1,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(625,136)|
+10,41,UPL Waitlist Vehicles,528,89,54,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,42,41,26,1,0,43,0,2,192,0,-1--1--1,|0||-1--1--1,1|(564,160)|
+1,43,44,26,1,0,0,0,0,128,0,-1--1--1,,1|(556,193)|
+10,44,SW Exogenous Waiting List,468,130,46,14,8,3,0,18,0,0,0,0,0-0-0,0-0-0,|12|B|255-0-255
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*Familiarity Coflow
+$192-192-192,0,Arial|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|72,72,5,0
+10,1,Total Familiarity with Prius,462,332,35,20,3,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+12,2,48,240,330,10,8,0,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,3,5,1,4,0,0,22,0,0,0,-1--1--1,,1|(384,328)|
+1,4,5,2,100,0,0,22,0,0,0,-1--1--1,,1|(290,328)|
+11,5,48,336,328,5,6,34,3,0,0,1,0,0,0
+10,6,Total Familiarity Gain Prius,336,348,48,14,40,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+12,7,48,693,330,10,8,0,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,8,10,7,4,0,0,22,0,0,0,-1--1--1,,1|(639,331)|
+1,9,10,1,100,0,0,22,0,0,0,-1--1--1,,1|(541,331)|
+11,10,48,591,331,5,6,34,3,0,0,1,0,0,0
+10,11,Total Familiarity Loss Prius,591,351,48,14,40,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+12,12,48,462,464,10,8,0,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,13,15,1,4,0,0,22,0,0,0,-1--1--1,,1|(462,375)|
+1,14,15,12,100,0,0,22,0,0,0,-1--1--1,,1|(462,432)|
+11,15,48,462,404,6,5,33,3,0,0,4,0,0,0
+10,16,Familiarity Update,522,404,54,8,40,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,17,Familiarity with Prius,463,203,34,22,3,131,0,20,0,0,0,0,0-0-0,255-255-128,|12|B|0-0-0
+1,18,1,17,1,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(462,275)|
+1,19,17,11,1,0,0,0,0,64,0,-1--1--1,,1|(545,237)|
+10,20,Installed Base i,621,450,53,8,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+10,21,Familiarity Gain,554,530,54,8,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+10,22,Familiarity of Prius Discarders,291,265,50,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,23,22,6,1,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(305,306)|
+10,24,Discards Prius to Gas,300,407,45,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,25,24,6,1,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(313,383)|
+10,26,Select Prius to Gas,149,409,57,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,27,26,24,1,0,0,0,0,64,0,-1--1--1,,1|(235,409)|
+1,28,39,11,1,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(607,359)|
+10,29,Select Gas to Prius,851,442,57,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,30,Share ij,214,458,31,8,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+10,31,Share ij,752,462,31,8,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,32,30,24,1,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(266,431)|
+10,33,Initial Familiarity with Prius,462,365,48,14,8,2,2,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,34,33,1,0,2,0,0,0,64,1,-1--1--1,,1|(462,358)|
+1,35,20,16,0,0,43,0,2,192,0,-1--1--1,|0||-1--1--1,1|(577,429)|
+1,36,21,16,0,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(539,473)|
+10,37,UPL Prius Class Share of Car Segment,898,459,53,21,8,2,1,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+10,38,Gas Discard Fr,800,380,45,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,39,Sales Prius from Gas,693,393,35,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,40,31,39,0,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(729,435)|
+1,41,29,39,0,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(783,421)|
+1,42,38,39,0,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(748,385)|
+10,43,Prius Discard Fr,316,453,49,8,8,3,0,16,0,0,0,0,-1--1--1,0-0-0,|0|B|0-0-0
+1,44,43,24,0,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(311,439)|
+10,45,Installed Base i,559,106,53,8,8,130,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,46,45,17,0,0,45,0,2,64,0,-1--1--1,|0||-1--1--1,1|(522,142)|
+10,47,Size of Prius Market,833,324,59,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|0|B|0-0-0
+10,48,UPL US Monthly Light Vehicle Sales,849,215,61,14,8,130,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+10,49,UPL Car Share of Light Vehicle Sales,973,248,61,14,8,130,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+10,50,UPL Prius Class Share of Car Segment,994,314,53,21,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,51,48,47,0,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(841,265)|
+1,52,49,47,0,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(903,285)|
+1,53,50,47,0,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(923,318)|
+1,54,47,39,0,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(775,352)|
+10,55,Size of Prius Market,161,349,42,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,56,55,24,0,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(223,375)|
+10,57,New Vehicle Buyers i,944,381,41,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|0|B|128-128-128
+1,58,57,38,0,0,0,0,0,128,0,-1--1--1,,1|(880,380)|
+10,59,New Vehicle Buyers i,347,507,41,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|0|B|128-128-128
+1,60,59,43,0,0,0,0,0,128,0,-1--1--1,,1|(333,483)|
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*Choice Utility
+$192-192-192,0,Arial|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|72,72,5,0
+10,1,Utility j,877,340,22,8,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,2,UPL US Average Retail Gasoline Price,162,126,67,14,8,130,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+10,3,Operating Cost j,157,249,49,8,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,4,UPL MPG Combined j,91,184,39,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,5,4,3,0,0,45,0,2,64,0,-1--1--1,|12||0-0-0,1|(121,214)|
+10,6,Real US Average Retail Gasoline Price,216,191,64,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,7,UPL Inflation Factor,295,127,43,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,8,2,6,0,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(184,153)|
+1,9,7,6,0,0,45,0,2,64,0,-1--1--1,|12||0-0-0,1|(260,154)|
+1,10,6,3,0,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(188,218)|
+10,11,Real Effective Price j,481,256,42,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,12,UPL Inflation Factor,400,195,43,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,13,12,11,0,0,45,0,2,192,0,-1--1--1,|12||0-0-0,1|(434,221)|
+10,14,Prius Constant k,966,391,50,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,15,14,1,0,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(927,368)|
+10,16,U2,978,287,10,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,17,16,1,0,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(936,308)|
+10,18,UPL Dealer Inventory Coverage,1031,219,38,21,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+10,19,Inventory Coverage Weight,923,236,52,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,20,19,16,0,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(948,259)|
+1,21,18,16,0,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(1003,254)|
+10,22,U1 j,786,290,13,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,23,TCO Weight,692,227,36,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,24,TCO j,425,515,18,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,25,22,1,0,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(824,311)|
+1,26,23,22,0,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(732,254)|
+10,27,Annual Operating Cost j,240,366,49,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,28,Miles per Year,242,231,42,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,29,Years,425,324,18,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,30,28,27,0,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(241,288)|
+10,31,Cents per Dollar,296,259,49,8,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,32,31,27,0,0,45,0,2,64,0,-1--1--1,|0||-1--1--1,1|(272,302)|
+10,33,Discount Rate,382,292,43,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,34,PV Lifetime Operating Costs j,338,431,53,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,35,34,24,0,0,43,0,2,192,0,-1--1--1,|12||0-0-0,1|(378,471)|
+10,36,PV Factor,373,365,30,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,37,27,34,0,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(282,394)|
+1,38,36,34,0,0,0,0,0,64,0,-1--1--1,,1|(360,388)|
+1,39,33,36,0,0,0,0,0,64,0,-1--1--1,,1|(378,321)|
+1,40,29,36,0,0,0,0,0,64,0,-1--1--1,,1|(404,340)|
+10,41,Effective Price j,541,196,47,8,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,42,UPL MSRP j,423,134,43,8,8,130,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+10,43,UPL Federal Tax Credit Prius,476,84,53,14,8,130,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+10,44,UPL State Government Incentives Prius,601,84,53,21,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,45,42,41,0,0,43,0,2,192,0,-1--1--1,|12||0-0-0,1|(475,161)|
+1,46,43,41,0,0,45,0,2,192,0,-1--1--1,|12||0-0-0,1|(506,136)|
+1,47,44,41,0,0,45,0,2,192,0,-1--1--1,|12||0-0-0,1|(570,140)|
+10,48,UPL Dealer Discount from MSRP,666,137,43,21,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,49,48,41,0,0,45,0,2,192,0,-1--1--1,|12||0-0-0,1|(596,169)|
+10,50,Prius Share of Customer Demand i,920,598,60,14,8,131,0,16,0,0,0,0,-1--1--1,0-0-0,|12|B|0-0-0
+10,51,Affinity ij,805,469,28,8,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,52,Familiarity ij,745,415,37,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,53,Familiarity with Prius,683,342,36,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,54,53,52,1,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(706,374)|
+1,55,52,51,1,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(755,425)|
+10,56,Matrix Entrant Selection ij,1005,556,43,14,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,57,56,50,1,0,0,0,0,64,0,-1--1--1,,1|(964,578)|
+10,58,Share ij,854,539,24,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,59,51,58,1,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(824,498)|
+1,60,58,50,1,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(886,569)|
+10,61,EXP Utility j,872,409,36,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,62,61,51,0,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(843,434)|
+10,63,Prius Introduction Date,917,501,53,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,64,63,50,0,0,0,0,0,64,0,-1--1--1,,1|(917,542)|
+10,65,Time,1065,662,23,8,8,2,1,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,66,65,50,0,1,0,0,0,64,0,-1--1--1,,1|(1005,635)|
+1,67,41,11,0,0,43,0,2,128,0,-1--1--1,|12||0-0-0,1|(518,218)|
+1,68,1,61,0,0,0,0,0,128,0,-1--1--1,,1|(875,367)|
+1,69,11,24,1,0,43,0,2,128,0,-1--1--1,|12||0-0-0,1|(435,480)|
+1,70,3,27,0,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(191,298)|
+10,71,Exogenous Familiarity Value,695,474,50,14,8,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,72,71,52,0,0,43,0,2,64,0,-1--1--1,|0||-1--1--1,1|(717,446)|
+10,73,SW Endogenous Familiarity,615,399,50,14,8,3,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,74,73,52,0,0,0,0,0,64,0,-1--1--1,,1|(679,406)|
+10,75,TCO j,814,226,25,8,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,76,75,22,0,0,43,0,2,192,0,-1--1--1,|0||-1--1--1,1|(802,251)|
+10,77,Discount Units Correction,318,318,45,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,78,77,36,0,0,0,0,0,128,0,-1--1--1,,1|(343,339)|
+10,79,"Conventional (Outside Good) Constant",995,334,47,21,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,80,79,1,0,0,0,0,0,128,0,-1--1--1,,1|(930,336)|
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*Data Reporting
+$192-192-192,0,Arial|12|B|0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|72,72,5,0
+10,1,Accumulated Continuous Data PS,278,356,40,20,3,3,0,0,0,0,0,0
+12,2,48,70,355,10,8,0,3,0,0,-1,0,0,0
+1,3,5,1,4,0,0,22,0,0,0,-1--1--1,,1|(192,357)|
+1,4,5,2,100,0,0,22,0,0,0,-1--1--1,,1|(107,357)|
+11,5,48,141,357,6,8,34,3,0,0,1,0,0,0
+10,6,Continuous Data PS,141,373,60,8,40,3,0,0,-1,0,0,0
+12,7,48,517,357,10,8,0,3,0,0,-1,0,0,0
+1,8,10,7,4,0,0,22,0,0,0,-1--1--1,,1|(462,357)|
+1,9,10,1,100,0,0,22,0,0,0,-1--1--1,,1|(362,357)|
+11,10,48,412,357,6,8,34,3,0,0,1,0,0,0
+10,11,Drained Reported Data PS,412,379,54,14,40,3,0,0,-1,0,0,0
+10,12,TIME STEP,476,433,41,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,13,Check Reporting,399,305,50,8,8,3,0,0,0,0,0,0
+10,14,Time,454,266,23,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,15,Reporting Period,205,456,51,8,8,3,0,0,0,0,0,0
+10,16,Reporting Period,282,271,58,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,17,16,13,1,0,0,0,0,64,0,-1--1--1,,1|(322,275)|
+1,18,14,13,1,0,0,0,0,64,0,-1--1--1,,1|(428,281)|
+1,19,13,10,1,0,0,0,0,64,0,-1--1--1,,1|(402,334)|
+10,20,Reported Data Prius Sales,359,440,44,14,8,3,0,0,0,0,0,0
+1,21,12,11,1,0,0,0,0,64,0,-1--1--1,,1|(461,394)|
+1,22,12,20,1,0,0,0,0,64,0,-1--1--1,,1|(400,464)|
+1,23,11,20,1,0,0,0,0,64,0,-1--1--1,,1|(397,413)|
+1,24,15,20,1,0,0,0,0,64,0,-1--1--1,,1|(287,472)|
+1,25,1,11,1,0,0,0,0,64,0,-1--1--1,,1|(326,392)|
+10,26,Waitlist,685,280,43,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,27,Accumulated Continuous Data WL,845,354,40,20,3,3,0,0,0,0,0,0
+12,28,48,645,355,10,8,0,3,0,0,-1,0,0,0
+1,29,31,27,4,0,0,22,0,0,0,-1--1--1,,1|(765,355)|
+1,30,31,28,100,0,0,22,0,0,0,-1--1--1,,1|(684,355)|
+11,31,48,719,355,6,8,34,3,0,0,1,0,0,0
+10,32,Continuous Data WL,719,377,36,14,40,3,0,0,-1,0,0,0
+12,33,48,1084,355,10,8,0,3,0,0,-1,0,0,0
+1,34,36,33,4,0,0,22,0,0,0,-1--1--1,,1|(1029,355)|
+1,35,36,27,100,0,0,22,0,0,0,-1--1--1,,1|(929,355)|
+11,36,48,979,355,6,8,34,3,0,0,1,0,0,0
+10,37,Drained Reported Data WL,979,377,55,14,40,3,0,0,-1,0,0,0
+10,38,TIME STEP,1043,431,41,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,39,Reported Data Waitlist,926,438,44,14,8,3,0,0,0,0,0,0
+1,40,38,37,1,0,0,0,0,64,0,-1--1--1,,1|(1028,392)|
+1,41,38,39,1,0,0,0,0,64,0,-1--1--1,,1|(967,462)|
+1,42,37,39,1,0,0,0,0,64,0,-1--1--1,,1|(964,411)|
+1,43,27,37,1,0,0,0,0,64,0,-1--1--1,,1|(893,390)|
+1,44,26,31,1,0,0,0,0,128,0,-1--1--1,,1|(710,321)|
+10,45,Check Reporting,957,287,57,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,46,45,36,1,0,0,0,0,128,0,-1--1--1,,1|(957,319)|
+10,47,Reporting Period,777,459,58,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,48,47,39,1,0,0,0,0,128,0,-1--1--1,,1|(886,463)|
+10,49,Order Fulfilment,133,277,56,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,50,49,5,1,0,0,0,0,128,0,-1--1--1,,1|(148,327)|
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*Data Uploads
+$192-192-192,0,Arial|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|72,72,5,0
+10,1,UPL US Monthly Prius Sales,126,392,83,8,0,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,2,UPL US Monthly Light Vehicle Sales,147,442,105,8,0,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,3,UPL US Average Retail Gasoline Price,154,303,110,8,0,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,4,UPL Federal Tax Credit Prius,133,325,88,8,0,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,5,UPL MSRP j,542,428,36,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,6,UPL Waitlist Length,104,417,59,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,7,UPL US Monthly Prius Sales,333,214,53,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+10,8,UPL US Monthly Light Vehicle Sales,430,166,61,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+10,9,"Prius Market Share - Actual",394,292,43,14,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,10,7,9,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(365,246)|
+1,11,8,9,1,0,45,0,2,64,0,-1--1--1,|12||0-0-0,1|(408,212)|
+10,12,UPL State Government Incentives Prius,163,348,129,20,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,13,Dealer Prius Sales,747,210,41,14,8,130,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+10,14,UPL US Monthly Light Vehicle Sales,814,174,61,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+10,15,"Prius Market Share - Simulated",794,286,54,14,8,131,0,16,0,0,0,0,-1--1--1,0-0-0,|12|B|0-0-0
+1,16,13,15,1,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(775,248)|
+1,17,14,15,1,0,45,0,2,192,0,-1--1--1,|12||0-0-0,1|(805,223)|
+10,18,UPL MPG Combined j,531,491,39,14,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,19,UPL Car Share of Light Vehicle Sales,150,466,115,19,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,20,UPL Prius Class Share of Car Segment,678,568,49,21,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,21,UPL US Prius Marketing Spend,137,371,103,17,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,22,Prius MSRP,383,407,36,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,23,Corolla MSRP,424,373,42,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,24,Camry MSRP,526,377,40,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,25,Prius MPG,346,480,33,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,26,Corolla MPG,373,512,38,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,27,Camry MPG,475,530,36,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,28,UPL Compact Class Share of Car Sales,505,620,60,14,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,29,UPL Midsize Class Share of Car Sales,753,626,56,14,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,30,40,5,0,0,0,0,0,64,0,-1--1--1,,1|(615,454)|
+1,31,40,18,0,0,0,0,0,64,0,-1--1--1,,1|(611,485)|
+1,32,40,20,0,0,0,0,0,64,0,-1--1--1,,1|(686,514)|
+1,33,23,5,0,0,0,0,0,64,0,-1--1--1,,1|(476,397)|
+10,34,Time,636,375,23,8,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,35,26,18,0,0,0,0,0,64,0,-1--1--1,,1|(444,502)|
+1,36,22,5,0,0,0,0,0,64,0,-1--1--1,,1|(455,416)|
+1,37,25,18,0,0,0,0,0,64,0,-1--1--1,,1|(428,484)|
+1,38,28,20,0,0,0,0,0,64,0,-1--1--1,,1|(583,596)|
+1,39,29,20,0,0,0,0,0,64,0,-1--1--1,,1|(725,604)|
+10,40,Market Segment Indicator Variable,692,482,53,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,41,Prius Market Sector Upgrade Time,726,375,48,21,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,42,34,40,0,0,0,0,0,64,0,-1--1--1,,1|(658,419)|
+1,43,41,40,0,0,0,0,0,64,0,-1--1--1,,1|(710,425)|
+10,44,UPL Waitlist Length,560,223,41,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+10,45,UPL US Monthly Prius Sales,627,175,53,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+10,46,UPL Waitlist Vehicles,595,291,37,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,47,44,46,0,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(573,250)|
+1,48,45,46,0,0,43,0,2,192,0,-1--1--1,|12||0-0-0,1|(612,226)|
+10,49,UPL US Monthly Prius Sales,1020,176,53,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+10,50,UPL Waitlist Vehicles,1211,170,41,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+10,51,One,903,373,14,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,52,Zero,906,419,15,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,53,StDevSales,1026,417,35,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,54,StDevWLVehicles,1169,416,52,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,55,WeightSales,1026,369,38,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,56,WeightWLVehicles,1166,368,55,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,57,53,55,0,0,45,0,2,64,0,-1--1--1,|12||0-0-0,1|(1026,400)|
+1,58,54,56,0,0,45,0,2,64,0,-1--1--1,|12||0-0-0,1|(1168,398)|
+10,59,Term1,909,474,20,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,60,Term2Sales,1027,474,35,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,61,Term2WLVehicles,1165,474,53,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,62,53,60,0,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(1026,438)|
+1,63,54,61,0,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(1167,438)|
+10,64,Start Date,970,528,31,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,65,64,59,0,0,0,0,0,64,0,-1--1--1,,1|(944,505)|
+1,66,64,60,0,0,0,0,0,64,0,-1--1--1,,1|(992,505)|
+1,67,64,61,0,0,0,0,0,64,0,-1--1--1,,1|(1060,502)|
+1,68,64,55,0,0,0,0,0,64,0,-1--1--1,,1|(995,455)|
+1,69,64,56,0,0,0,0,0,64,0,-1--1--1,,1|(1062,452)|
+10,70,Time,909,521,23,8,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,71,70,59,0,0,0,0,0,64,0,-1--1--1,,1|(909,504)|
+1,72,70,60,0,0,0,0,0,64,0,-1--1--1,,1|(961,500)|
+1,73,70,61,0,0,0,0,0,64,0,-1--1--1,,1|(1019,500)|
+10,74,Time,1084,336,23,8,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,75,74,55,0,0,0,0,0,64,0,-1--1--1,,1|(1061,349)|
+1,76,74,56,0,0,0,0,0,64,0,-1--1--1,,1|(1117,349)|
+10,77,UPL Dealer Discount from MSRP,136,537,115,21,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,78,24,5,0,0,0,0,0,64,0,-1--1--1,,1|(531,395)|
+1,79,27,18,0,0,0,0,0,64,0,-1--1--1,,1|(492,517)|
+10,80,UPL Inflation Factor,104,488,59,8,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,81,Reported Sales Residuals,985,293,46,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,82,49,81,0,0,45,0,2,192,0,-1--1--1,|12||0-0-0,1|(1004,227)|
+10,83,Reported Data Prius Sales,936,205,47,14,8,130,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,84,83,81,0,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(956,242)|
+10,85,UPL Dealership Deliveries,120,514,107,22,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,86,UPL Dealer Inventory Coverage,136,563,124,22,8,131,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+10,87,Reported WL Vehicles Residuals,1175,297,57,14,8,3,0,16,0,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+1,88,50,87,0,0,45,0,2,192,0,-1--1--1,|12||0-0-0,1|(1195,226)|
+10,89,Reported Data Waitlist,1135,204,47,14,8,2,0,19,-1,0,0,0,128-128-128,0-0-0,|12|B|128-128-128
+1,90,89,87,0,0,43,0,2,64,0,-1--1--1,|12||0-0-0,1|(1151,244)|
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*Summary Statistics Calculations
+$192-192-192,0,Arial|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|72,72,75,0
+10,1,"R^2",878,496,12,8,8,3,0,2,-1,0,0,0,0-0-0,0-0-0,|10|B|255-0-0
+10,2,r,874,439,4,8,8,3,0,2,-1,0,0,0,0-0-0,0-0-0,|10|B|255-0-0
+1,3,2,1,1,0,0,0,0,0,0,-1--1--1,,1|(881,482)|
+10,4,M X,785,444,12,8,8,3,0,0,-1,0,0,0
+1,5,4,2,0,0,0,0,0,0,0,-1--1--1,,1|(826,441)|
+10,6,M Y,786,383,11,8,8,3,0,0,-1,0,0,0
+1,7,6,2,0,0,0,0,0,0,0,-1--1--1,,1|(827,409)|
+10,8,Mxy,860,361,12,8,8,3,0,0,-1,0,0,0
+1,9,8,2,0,0,0,0,0,0,0,-1--1--1,,1|(865,393)|
+10,10,Sx,937,369,8,8,8,3,0,0,-1,0,0,0
+1,11,10,2,0,0,0,0,0,0,0,-1--1--1,,1|(908,400)|
+10,12,Sy,964,405,8,8,8,3,0,0,-1,0,0,0
+1,13,12,2,0,0,0,0,0,0,0,-1--1--1,,1|(923,420)|
+1,14,28,4,0,0,0,0,0,0,0,-1--1--1,,1|(752,418)|
+10,15,Sum Xi,728,478,21,8,8,3,0,0,-1,0,0,0
+1,16,15,4,0,0,0,0,0,0,0,-1--1--1,,1|(750,464)|
+10,17,dt,689,437,7,8,8,3,0,0,-1,0,0,0
+1,18,17,15,1,0,0,0,0,0,0,-1--1--1,,1|(697,457)|
+10,19,Xi,655,498,8,8,8,3,0,0,-1,0,0,0
+1,20,19,15,0,0,0,0,0,0,0,-1--1--1,,1|(678,491)|
+10,21,pick,576,418,13,8,8,3,0,0,-1,0,0,0
+1,22,21,19,0,0,0,0,0,0,0,-1--1--1,,1|(610,453)|
+10,23,X,594,494,6,8,8,3,0,0,-1,0,0,0
+1,24,23,19,0,0,0,0,0,0,0,-1--1--1,,1|(616,495)|
+10,25,Historical,535,467,26,8,8,3,0,0,-1,0,0,0
+1,26,25,23,0,0,0,0,0,0,0,-1--1--1,,1|(563,480)|
+1,27,146,17,0,0,0,0,0,0,0,-1--1--1,,1|(671,433)|
+10,28,Count,732,401,17,8,8,3,0,0,-1,0,0,0
+1,29,28,6,0,0,0,0,0,0,0,-1--1--1,,1|(755,393)|
+10,30,Sum Yi,731,340,20,8,8,3,0,0,-1,0,0,0
+1,31,30,6,0,0,0,0,0,0,0,-1--1--1,,1|(752,357)|
+1,32,17,28,1,0,0,0,0,0,0,-1--1--1,,1|(719,422)|
+1,33,21,28,1,0,0,0,0,0,0,-1--1--1,,1|(640,403)|
+10,34,Yi,662,346,7,8,8,3,0,0,-1,0,0,0
+1,35,34,30,0,0,0,0,0,0,0,-1--1--1,,1|(683,344)|
+1,36,21,34,0,0,0,0,0,0,0,-1--1--1,,1|(614,385)|
+10,37,Y,608,311,5,8,8,3,0,0,-1,0,0,0
+1,38,37,34,0,0,0,0,0,0,0,-1--1--1,,1|(628,323)|
+10,39,Simulated,544,277,28,8,8,3,0,0,-1,0,0,0
+1,40,39,37,0,0,0,0,0,0,0,-1--1--1,,1|(574,293)|
+10,41,dt,707,299,14,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+1,42,41,30,0,0,0,0,0,64,0,-1--1--1,,1|(714,313)|
+10,43,SumXY,800,294,21,8,8,3,0,0,-1,0,0,0
+1,44,43,8,0,0,0,0,0,0,0,-1--1--1,,1|(824,322)|
+10,45,Xi,764,240,14,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+1,46,45,43,1,0,0,0,0,64,0,-1--1--1,,1|(785,262)|
+1,47,41,43,1,0,0,0,0,64,0,-1--1--1,,1|(740,292)|
+10,48,Yi,828,238,14,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+1,49,48,43,1,0,0,0,0,64,0,-1--1--1,,1|(812,269)|
+10,50,MY2,1001,441,14,8,8,3,0,0,-1,0,0,0
+1,51,50,12,0,0,0,0,0,0,0,-1--1--1,,1|(987,427)|
+10,52,SumY2,1045,466,20,8,8,3,0,0,-1,0,0,0
+1,53,52,50,0,0,0,0,0,0,0,-1--1--1,,1|(1028,456)|
+10,54,Count,1077,414,24,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+1,55,54,50,0,0,0,0,0,64,0,-1--1--1,,1|(1041,426)|
+10,56,dt,1110,452,14,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+1,57,56,52,0,0,0,0,0,64,0,-1--1--1,,1|(1087,456)|
+10,58,M Y,1034,377,18,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+1,59,58,12,0,0,0,0,0,64,0,-1--1--1,,1|(1000,389)|
+10,60,Yi,1109,486,14,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+1,61,60,52,0,0,0,0,0,64,0,-1--1--1,,1|(1086,479)|
+10,62,Count,899,315,24,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+1,63,62,8,0,0,0,0,0,64,0,-1--1--1,,1|(884,332)|
+10,64,MX2,976,308,14,8,8,3,0,0,-1,0,0,0
+1,65,64,10,0,0,0,0,0,0,0,-1--1--1,,1|(960,332)|
+10,66,SumX2,994,268,21,8,8,3,0,0,-1,0,0,0
+1,67,66,64,0,0,0,0,0,0,0,-1--1--1,,1|(988,281)|
+10,68,dt,1071,268,14,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+1,69,68,66,0,0,0,0,0,64,0,-1--1--1,,1|(1043,268)|
+10,70,Xi,1051,237,14,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+1,71,70,66,0,0,0,0,0,64,0,-1--1--1,,1|(1028,248)|
+10,72,M X,1001,346,19,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+1,73,72,10,0,0,0,0,0,64,0,-1--1--1,,1|(970,356)|
+10,74,Count,1039,301,24,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+1,75,74,64,0,0,0,0,0,64,0,-1--1--1,,1|(1009,303)|
+10,76,MAPE,678,686,19,8,8,3,0,2,-1,0,0,0,0-0-0,0-0-0,|10|B|255-0-0
+10,77,MSE,1055,672,15,8,8,3,0,2,-1,0,0,0,0-0-0,0-0-0,|10|B|255-0-0
+10,78,RMSE,1056,717,19,8,8,3,0,2,-1,0,0,0,0-0-0,0-0-0,|10|B|255-0-0
+10,79,Residuals,556,608,28,8,8,3,0,2,-1,0,0,0,0-0-0,0-0-0,|10|B|255-0-0
+10,80,Yi,494,579,14,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+10,81,Xi,494,626,14,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+1,82,80,79,0,0,0,0,0,64,0,-1--1--1,,1|(516,589)|
+1,83,81,79,0,0,0,0,0,64,0,-1--1--1,,1|(511,621)|
+1,84,77,78,0,0,0,0,0,0,0,-1--1--1,,1|(1055,687)|
+10,85,dif cov,941,616,19,8,8,3,0,0,-1,0,0,0
+1,86,85,77,0,0,0,0,0,0,0,-1--1--1,,1|(992,640)|
+10,87,dif mea,1121,616,21,8,8,3,0,0,-1,0,0,0
+1,88,87,77,0,0,0,0,0,0,0,-1--1--1,,1|(1093,639)|
+10,89,dif var,1049,616,17,8,8,3,0,0,-1,0,0,0
+1,90,89,77,0,0,0,0,0,0,0,-1--1--1,,1|(1050,637)|
+10,91,Sx,995,613,15,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+10,92,Sy,991,565,15,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+1,93,91,89,0,0,0,0,0,64,0,-1--1--1,,1|(1014,613)|
+1,94,92,89,0,0,0,0,0,64,0,-1--1--1,,1|(1014,585)|
+10,95,r,897,563,11,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+1,96,95,85,0,0,0,0,0,64,0,-1--1--1,,1|(914,584)|
+1,97,92,85,0,0,0,0,0,64,0,-1--1--1,,1|(971,585)|
+1,98,91,85,0,0,0,0,0,64,0,-1--1--1,,1|(976,613)|
+10,99,M X,1070,568,19,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+10,100,M Y,1142,568,18,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+1,101,99,87,0,0,0,0,0,64,0,-1--1--1,,1|(1089,587)|
+1,102,100,87,0,0,0,0,0,64,0,-1--1--1,,1|(1134,585)|
+10,103,Sum APE,637,628,28,8,8,3,0,0,-1,0,0,0
+1,104,103,76,0,0,0,0,0,0,0,-1--1--1,,1|(652,651)|
+10,105,Count,722,634,24,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|255-0-0
+1,106,105,76,0,0,0,0,0,64,0,-1--1--1,,1|(704,654)|
+10,107,Xi,718,570,14,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+10,108,Yi,718,538,14,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+1,109,107,103,0,0,0,0,0,64,0,-1--1--1,,1|(683,594)|
+1,110,108,103,0,0,0,0,0,64,0,-1--1--1,,1|(682,577)|
+10,111,dt,718,602,14,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+1,112,111,103,0,0,0,0,0,64,0,-1--1--1,,1|(689,610)|
+10,113,MAE over Mean,784,689,44,8,8,3,0,2,-1,0,0,0,0-0-0,0-0-0,|10|B|255-0-0
+10,114,Sum AE,801,626,23,8,8,3,0,0,-1,0,0,0
+1,115,114,113,0,0,0,0,0,0,0,-1--1--1,,1|(794,650)|
+1,116,105,113,0,0,0,0,0,64,0,-1--1--1,,1|(747,656)|
+1,117,111,114,0,0,0,0,0,64,0,-1--1--1,,1|(748,610)|
+1,118,107,114,0,0,0,0,0,64,0,-1--1--1,,1|(753,594)|
+1,119,108,114,0,0,0,0,0,64,0,-1--1--1,,1|(754,576)|
+10,120,Uc,583,787,9,8,8,3,0,2,-1,0,0,0,128-128-128,0-0-0,|10|B|255-0-0
+10,121,Um,583,734,11,8,8,3,0,2,-1,0,0,0,128-128-128,0-0-0,|10|B|255-0-0
+10,122,Us,583,762,9,8,8,3,0,2,-1,0,0,0,128-128-128,0-0-0,|10|B|255-0-0
+10,123,dif mea,501,733,28,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+10,124,dif var,500,759,24,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+10,125,dif cov,498,787,26,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+10,126,MSE,666,761,22,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+1,127,123,121,0,0,0,0,0,64,0,-1--1--1,,1|(543,733)|
+1,128,124,122,0,0,0,0,0,64,0,-1--1--1,,1|(542,759)|
+1,129,125,120,0,0,0,0,0,64,0,-1--1--1,,1|(542,787)|
+1,130,126,121,0,0,0,0,0,64,0,-1--1--1,,1|(625,747)|
+1,131,126,122,0,0,0,0,0,64,0,-1--1--1,,1|(625,761)|
+1,132,126,120,0,0,0,0,0,64,0,-1--1--1,,1|(624,773)|
+10,133,End Time,491,382,27,8,8,3,0,0,0,0,0,0
+10,134,Interval,494,413,20,8,8,3,0,0,0,0,0,0
+1,135,151,21,0,0,0,0,0,64,0,-1--1--1,,1|(529,376)|
+1,136,133,21,0,0,0,0,0,64,0,-1--1--1,,1|(529,398)|
+1,137,134,21,0,0,0,0,0,64,0,-1--1--1,,1|(531,415)|
+10,138,Time,575,363,22,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+1,139,138,21,0,0,0,0,0,0,0,-1--1--1,,1|(575,383)|
+1,140,146,21,0,0,0,0,0,0,0,-1--1--1,,1|(600,421)|
+10,141,M X,859,688,19,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|10|B|128-128-128
+1,142,141,113,0,0,0,0,0,64,0,-1--1--1,,1|(841,688)|
+12,143,0,416,254,57,27,8,4,0,2,-1,0,0,0,0-0-0,0-0-0,|10|B|0-0-255
+Set the variable Simulated equal to the model generated variable you wish to compare to data.
+12,144,0,409,486,57,27,8,4,0,2,-1,0,0,0,0-0-0,0-0-0,|10|B|0-0-255
+Set the variable Historical equal to the data against which you wish to compare model behavior.
+10,145,UPL US Monthly Prius Sales,472,544,50,20,8,130,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,146,TIME STEP,638,426,39,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,147,UPL Waitlist Length,535,488,41,8,8,2,1,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,148,SW Input Data,164,365,39,8,8,3,0,0,0,0,0,0
+10,149,Reported Data Prius Sales,473,174,49,16,8,130,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,150,145,25,0,0,0,0,0,64,0,-1--1--1,,1|(503,504)|
+10,151,Start Date,494,344,36,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,152,148,39,0,0,0,0,0,64,0,-1--1--1,,1|(350,321)|
+1,153,148,25,0,0,0,0,0,64,0,-1--1--1,,1|(344,414)|
+1,154,149,39,0,0,0,0,0,64,0,-1--1--1,,1|(507,223)|
+10,155,UPL Waitlist Vehicles,592,544,50,14,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,156,155,25,0,0,0,0,0,64,0,-1--1--1,,1|(565,508)|
+10,157,Reported Data Waitlist,588,176,45,14,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+1,158,157,39,0,0,0,0,0,128,0,-1--1--1,,1|(567,223)|
+10,159,Prius Sales Units Correction,281,365,48,14,8,3,0,0,0,0,0,0
+10,160,Waiting List Units Correction,393,367,49,14,8,3,0,0,0,0,0,0
+1,161,159,39,0,0,0,0,0,128,0,-1--1--1,,1|(414,320)|
+1,162,160,39,0,0,0,0,0,128,0,-1--1--1,,1|(466,322)|
+1,163,160,25,0,0,0,0,0,128,0,-1--1--1,,1|(461,415)|
+1,164,159,25,0,0,0,0,0,128,0,-1--1--1,,1|(408,416)|
+\\\---/// Sketch information - do not modify anything except names
+V300  Do not put anything below this section - it will be ignored
+*Summary Statistics Dashboard
+$192-192-192,0,Arial|12||0-0-0|0-0-0|0-0-255|-1--1--1|-1--1--1|72,72,5,0
+10,1,MAPE,395,266,26,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12|B|255-0-0
+10,2,MSE,401,365,22,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12|B|255-0-0
+10,3,r,401,404,11,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12|B|255-0-0
+10,4,"R^2",403,438,19,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12|B|255-0-0
+10,5,Residuals,670,363,35,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12|B|255-0-0
+10,6,RMSE,401,335,26,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12|B|255-0-0
+10,7,MAE over Mean,396,296,32,14,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12|B|255-0-0
+10,8,Uc,751,275,16,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12|B|255-0-0
+10,9,Us,666,275,16,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12|B|255-0-0
+10,10,Um,581,272,17,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12|B|255-0-0
+12,11,0,305,265,45,14,8,132,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+Mean Absolute Percent Error
+12,12,0,299,232,38,19,8,4,0,16,-1,0,0,0,0-0-0,0-0-0,|12|BU|0-0-0
+Statistic:
+12,13,0,392,233,38,19,8,4,0,18,-1,0,0,0,0-0-0,0-0-0,|12|BU|255-0-0
+Variable Name
+12,14,0,307,298,45,14,8,132,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+Mean Absolute Error/Mean
+12,15,0,302,332,39,14,8,4,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+Root Mean Square Error
+12,16,0,307,361,40,14,8,132,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+Mean Square Error
+12,17,0,508,274,46,14,8,4,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+Theil Inequality Statistics
+12,18,0,308,401,64,21,8,132,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+Correlation between Simulated and Actual Variables
+12,19,0,312,436,32,8,8,4,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+R Squared
+12,20,0,587,362,22,8,8,4,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+Error(t)
+12,21,0,583,243,33,13,8,132,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+Bias Fraction
+12,22,0,671,245,45,19,8,132,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+Unequal Variance Fraction
+12,23,0,754,245,46,20,8,132,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+Unequal Covariance Fraction
+12,24,0,305,466,35,8,8,4,0,16,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-0
+Data Points
+10,25,Count,405,464,24,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12|B|255-0-0
+12,26,0,507,139,80,10,8,4,0,2,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-160
+Summary Statistics Module
+12,27,0,512,175,167,29,8,4,0,2,-1,0,0,0,0-0-0,0-0-0,|12|B|0-0-160
+Calculates various summary statistics assessing the fit between a simulated and actual variable.  Assumes the data are available every Interval time units between the Start Time and End Time.   See Chapter 21.
+10,28,"R^2",613,477,20,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,29,Um,692,474,19,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,30,Us,770,476,17,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,31,Uc,856,475,17,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,32,Dealer Prius Sales,537,519,59,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,33,Installed Base i,657,521,50,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,34,Familiarity with Prius,766,525,46,14,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+10,35,SW Input Data,985,475,48,8,8,2,0,3,-1,0,0,0,128-128-128,0-0-0,|12||128-128-128
+///---\\\
+:GRAPH US_Prius_Sales_-_Actual_v_Simulated
+:TITLE US Prius Sales - Actual v Simulated
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR Sales
+:SCALE
+:VAR UPL US Monthly Prius Sales
+
+:GRAPH US_Monthly_Sales
+:TITLE US Monthly Prius Sales - Actual v Simulated
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR Sales
+:VAR UPL US Monthly Prius Sales
+
+:GRAPH Prius_Waiting_List
+:TITLE Prius Waiting List - Actual v Simulated
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR Waiting List
+:VAR UPL Waitlist
+
+:GRAPH Dealer_Incentive
+:TITLE Dealer Incentive - Actual v Simulated
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR Dealer Incentive
+:VAR UPL Dealer Incentives
+
+:GRAPH Monthly_Prius_Sales_-_AvS
+:TITLE Monthly Prius Sales - Actual v Simulated
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR Dealer Sales
+:VAR UPL US Monthly Prius Sales
+
+:GRAPH waitlist_months
+:TITLE Prius Waitlist - Actual v Simulated
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR UPL Waitlist
+:VAR "Waitlist Estimate (Months)"
+
+:GRAPH Cumulative_Sales
+:TITLE Cumulative Sales - Actual v Simulated
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR Cumulative Sales
+:VAR UPL US Cumulative Prius Sales
+
+:GRAPH Prius_Production_for_US_
+:TITLE Prius Production for US Market - Actual v Simulated
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR Shipments to Dealers
+:VAR UPL Prius Exports to US
+
+:GRAPH Familiarity_with_Prius
+:TITLE Familiarity with Prius
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR Familiarity with Prius
+
+:GRAPH Customer_Demand_Market_Share
+:TITLE Customer Demand Market Share ij
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR Share ij[Technology,Technology]
+
+:GRAPH Prius_Waitlist_new
+:TITLE Prius Waitlist - Actual v Simulated
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR "Waitlist Estimate (Months)"
+:VAR UPL Waitlist
+
+:GRAPH Monthly_Sales
+:TITLE Graph for Installed Base i
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR Dealer Prius Sales
+:VAR UPL US Monthly Prius Sales
+
+:GRAPH Monthly_Prius_Sales
+:TITLE Monthly Prius Sales - Actual v Simulated
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR Dealer Prius Sales
+:VAR UPL US Monthly Prius Sales
+
+:GRAPH Dealer_Incentives_2
+:TITLE Dealer Incentives - Actual v Simulated
+:X-DIV 20
+:X-MIN 1
+:X-MAX 121
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR Dealer Incentive
+:VAR UPL Dealer Incentives
+
+:GRAPH Graph_for_UPL_Waiting_Li
+:TITLE Waiting List (Vehicles - Actual v Simulated
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR Waiting List
+:VAR "UPL Waiting List (Vehicles)"
+
+:GRAPH WL_Length_Months
+:TITLE Waitlist Length - Months
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR "Waitlist Estimate (Months)"
+:VAR UPL Waitlist Length
+
+:GRAPH Customer_Orders
+:TITLE Customer Orders - Simulated v Actual
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR Customer Orders
+:VAR UPL Estimated Customer Orders
+
+:GRAPH Waitlist_Vehicles
+:TITLE Graph for UPL Waitlist Length
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR "UPL Waiting List (Vehicles)"
+:VAR Waiting List
+
+:GRAPH Probability_of_Contact
+:TITLE Probability of Contact
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR Probability of Contact with Prius Driver
+:VAR Probability of Contact with Waitlisted Prius Buyer
+
+:GRAPH Socialization_Effect
+:TITLE Socialization Effect
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR Socialization Effect of Prius Drivers
+:VAR Socialization Effect of Waitlisted Prius Buyers
+
+:GRAPH Graph_for_UPL_Waitlist_L
+:TITLE Graph for UPL Waitlist Length
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR UPL Waitlist Length
+:VAR "Perceived Waitlist Length (Months)"
+
+:GRAPH Graph_for_Start_Date
+:TITLE Graph for Start Date
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR UPL Waitlist Length
+:Y-MAX 10
+:VAR "Perceived Waitlist Length (Months)"
+:Y-MAX 10
+:DATASET *2
+
+:GRAPH Graph_for_Waitlist
+:TITLE Graph for Current Waitlist Length (Months)
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR "Current Waitlist Length (Months)"
+:VAR UPL Waitlist Length
+
+:GRAPH Graph_for_Monthly_Reported_WL
+:TITLE Graph for Continuous Data
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR Reported Data[WLLENGTH]
+:VAR UPL Waitlist Length
+
+:GRAPH Graph_for_Sales
+:TITLE Graph for Sales
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR UPL US Monthly Prius Sales
+:VAR Order Fulfilment
+
+:GRAPH Graph_for_WL_Vehicles
+:TITLE Graph for SW Fleet Model
+:WIDTH 6
+:HEIGHT 4
+:SCALE
+:VAR "UPL Waiting List (Vehicles)"
+:VAR Waiting List
+
+:GRAPH Graph_Waitlist
+:TITLE Graph for Waitlists
+:SCALE
+:VAR UPL Waitlist Vehicles
+:VAR Waitlist
+:L<%^E!@
+1:Current.vdf
+9:Current
+10:SupplyConstraintsModel2_SIM.cin,SupplyConstraintsModel2_OPT.cin
+11:SupplyConstraintsModel2_OPT.voc
+12:SupplyConstraintsModel_OPT.vpd
+15:0,0,0,0,0,1
+19:5,1
+27:2,
+34:0,
+4:Time
+5:Retirement Time
+35:Date
+36:YYYY-MM-DD
+37:2000
+38:1
+39:1
+40:2
+41:0
+42:0
+24:0
+25:120
+26:120
+6:GAS
+6:PRIUS
